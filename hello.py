@@ -688,3 +688,534 @@ if st.session_state.calculated:
 
     else:
         st.error("💪 Don't give up! Keep practicing and try again!")
+
+
+
+
+    # ---------------------------------------------------------------------------------------------------------
+    # NEW TASK
+    # ---------------------------------------------------------------------------------------------------------
+
+# -----------------------------
+# PAGE SETTINGS
+# -----------------------------
+st.set_page_config(
+    page_title="Quiz Master",
+    page_icon="🧠",
+    layout="centered"
+)
+
+# -----------------------------
+# CUSTOM CSS
+# -----------------------------
+st.markdown("""
+<style>
+
+    .main-title {
+        text-align: center;
+        font-size: 45px;
+        font-weight: 800;
+        margin-bottom: 5px;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: #777;
+        font-size: 18px;
+        margin-bottom: 30px;
+    }
+
+    .question-card {
+        padding: 25px;
+        border-radius: 18px;
+        border: 1px solid #ddd;
+        margin: 20px 0;
+    }
+
+    .question-number {
+        font-size: 15px;
+        color: #777;
+        font-weight: 600;
+    }
+
+    .question-text {
+        font-size: 25px;
+        font-weight: 700;
+        margin-top: 8px;
+    }
+
+    .score-box {
+        padding: 30px;
+        border-radius: 20px;
+        text-align: center;
+        border: 1px solid #ddd;
+        margin: 20px 0;
+    }
+
+    .score {
+        font-size: 60px;
+        font-weight: 800;
+    }
+
+</style>
+""", unsafe_allow_html=True)
+
+
+# -----------------------------
+# SESSION STATE
+# -----------------------------
+if "page" not in st.session_state:
+    st.session_state.page = "create"
+
+if "questions" not in st.session_state:
+    st.session_state.questions = []
+
+if "current_question" not in st.session_state:
+    st.session_state.current_question = 0
+
+if "answers" not in st.session_state:
+    st.session_state.answers = {}
+
+if "quiz_finished" not in st.session_state:
+    st.session_state.quiz_finished = False
+
+
+# -----------------------------
+# FUNCTIONS
+# -----------------------------
+def reset_quiz():
+
+    st.session_state.page = "create"
+    st.session_state.questions = []
+    st.session_state.current_question = 0
+    st.session_state.answers = {}
+    st.session_state.quiz_finished = False
+
+
+def start_quiz(questions):
+
+    st.session_state.questions = questions
+    st.session_state.current_question = 0
+    st.session_state.answers = {}
+    st.session_state.quiz_finished = False
+    st.session_state.page = "play"
+
+
+def finish_quiz():
+
+    st.session_state.quiz_finished = True
+    st.session_state.page = "result"
+
+
+# -----------------------------
+# CREATE QUIZ PAGE
+# -----------------------------
+if st.session_state.page == "create":
+
+    st.markdown(
+        '<div class="main-title">🧠 Quiz Master</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="subtitle">Create your own quiz and challenge yourself!</div>',
+        unsafe_allow_html=True
+    )
+
+    st.subheader("⚙️ Quiz Setup")
+
+    number_of_questions = st.number_input(
+        "Number of questions",
+        min_value=1,
+        max_value=20,
+        value=5,
+        step=1
+    )
+
+    questions = []
+
+    st.divider()
+
+    # -------------------------
+    # QUESTION CREATOR
+    # -------------------------
+    for i in range(int(number_of_questions)):
+
+        st.markdown(f"### 📝 Question {i + 1}")
+
+        question = st.text_input(
+            "Question",
+            placeholder="Example: What is the capital of France?",
+            key=f"question_{i}"
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            choice_a = st.text_input(
+                "🔵 Choice A",
+                placeholder="Enter choice A",
+                key=f"a_{i}"
+            )
+
+            choice_c = st.text_input(
+                "🟢 Choice C",
+                placeholder="Enter choice C",
+                key=f"c_{i}"
+            )
+
+        with col2:
+
+            choice_b = st.text_input(
+                "🟡 Choice B",
+                placeholder="Enter choice B",
+                key=f"b_{i}"
+            )
+
+            choice_d = st.text_input(
+                "🔴 Choice D",
+                placeholder="Enter choice D",
+                key=f"d_{i}"
+            )
+
+        correct = st.radio(
+            "Correct answer",
+            ["A", "B", "C", "D"],
+            horizontal=True,
+            key=f"correct_{i}"
+        )
+
+        questions.append({
+            "question": question,
+            "choices": {
+                "A": choice_a,
+                "B": choice_b,
+                "C": choice_c,
+                "D": choice_d
+            },
+            "correct": correct
+        })
+
+        st.divider()
+
+    # -------------------------
+    # START BUTTON
+    # -------------------------
+    if st.button(
+        "🚀 Start Quiz",
+        use_container_width=True,
+        type="primary"
+    ):
+
+        valid = True
+
+        for q in questions:
+
+            if not q["question"].strip():
+                valid = False
+
+            for choice in q["choices"].values():
+
+                if not choice.strip():
+                    valid = False
+
+        if not valid:
+
+            st.error(
+                "⚠️ Please fill in every question and all four choices."
+            )
+
+        else:
+
+            start_quiz(questions)
+
+            st.rerun()
+
+
+# -----------------------------
+# QUIZ PLAY PAGE
+# -----------------------------
+elif st.session_state.page == "play":
+
+    questions = st.session_state.questions
+
+    total_questions = len(questions)
+
+    current = st.session_state.current_question
+
+    question = questions[current]
+
+    # -------------------------
+    # HEADER
+    # -------------------------
+    st.markdown(
+        '<div class="main-title">🎮 Quiz Time!</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"""
+        <div class="subtitle">
+            Question {current + 1} of {total_questions}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # -------------------------
+    # PROGRESS
+    # -------------------------
+    progress = (current + 1) / total_questions
+
+    st.progress(progress)
+
+    st.write("")
+
+    # -------------------------
+    # QUESTION CARD
+    # -------------------------
+    st.markdown(
+        f"""
+        <div class="question-card">
+
+            <div class="question-number">
+                QUESTION {current + 1}
+            </div>
+
+            <div class="question-text">
+                {question["question"]}
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # -------------------------
+    # ANSWERS
+    # -------------------------
+    previous_answer = st.session_state.answers.get(current)
+
+    options = ["A", "B", "C", "D"]
+
+    default_index = None
+
+    if previous_answer in options:
+        default_index = options.index(previous_answer)
+
+    selected = st.radio(
+        "Choose your answer:",
+        options,
+        format_func=lambda x: f"{x}. {question['choices'][x]}",
+        index=default_index,
+        key=f"play_answer_{current}"
+    )
+
+    st.write("")
+
+    # -------------------------
+    # NAVIGATION
+    # -------------------------
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        if current > 0:
+
+            if st.button(
+                "⬅️ Previous",
+                use_container_width=True
+            ):
+
+                if selected:
+                    st.session_state.answers[current] = selected
+
+                st.session_state.current_question -= 1
+
+                st.rerun()
+
+    with col2:
+
+        if current < total_questions - 1:
+
+            if st.button(
+                "Next ➡️",
+                use_container_width=True,
+                type="primary"
+            ):
+
+                if not selected:
+
+                    st.warning("⚠️ Please choose an answer.")
+
+                else:
+
+                    st.session_state.answers[current] = selected
+
+                    st.session_state.current_question += 1
+
+                    st.rerun()
+
+        else:
+
+            if st.button(
+                "🏆 Finish Quiz",
+                use_container_width=True,
+                type="primary"
+            ):
+
+                if not selected:
+
+                    st.warning("⚠️ Please choose an answer.")
+
+                else:
+
+                    st.session_state.answers[current] = selected
+
+                    finish_quiz()
+
+                    st.rerun()
+
+    st.write("")
+
+    # -------------------------
+    # QUESTION STATUS
+    # -------------------------
+    answered = len(st.session_state.answers)
+
+    st.caption(
+        f"📌 {answered} of {total_questions} questions answered"
+    )
+
+
+# -----------------------------
+# RESULT PAGE
+# -----------------------------
+elif st.session_state.page == "result":
+
+    questions = st.session_state.questions
+    answers = st.session_state.answers
+
+    total = len(questions)
+
+    score = 0
+
+    for i, question in enumerate(questions):
+
+        if answers.get(i) == question["correct"]:
+            score += 1
+
+    percentage = (score / total) * 100
+
+    # -------------------------
+    # TITLE
+    # -------------------------
+    st.markdown(
+        '<div class="main-title">🏆 Quiz Complete!</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="subtitle">Here are your final results</div>',
+        unsafe_allow_html=True
+    )
+
+    # -------------------------
+    # SCORE
+    # -------------------------
+    st.markdown(
+        f"""
+        <div class="score-box">
+
+            <div>Your Score</div>
+
+            <div class="score">
+                {score}/{total}
+            </div>
+
+            <div>
+                {percentage:.0f}%
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.progress(percentage / 100)
+
+    # -------------------------
+    # FEEDBACK
+    # -------------------------
+    if percentage == 100:
+
+        st.success("🏆 Perfect score! You're amazing!")
+
+    elif percentage >= 80:
+
+        st.success("🌟 Excellent work! Keep it up!")
+
+    elif percentage >= 60:
+
+        st.info("👍 Good job! You did well!")
+
+    elif percentage >= 50:
+
+        st.warning("🙂 Not bad! A little more practice will help.")
+
+    else:
+
+        st.error("💪 Keep practicing! You'll get better!")
+
+    st.divider()
+
+    # -------------------------
+    # ANSWER REVIEW
+    # -------------------------
+    st.subheader("📋 Answer Review")
+
+    for i, question in enumerate(questions):
+
+        user_answer = answers.get(i)
+        correct_answer = question["correct"]
+
+        st.markdown(
+            f"### Question {i + 1}"
+        )
+
+        st.write(question["question"])
+
+        if user_answer == correct_answer:
+
+            st.success(
+                f"✅ Correct — {correct_answer}. "
+                f"{question['choices'][correct_answer]}"
+            )
+
+        else:
+
+            st.error(
+                f"❌ Your answer: "
+                f"{user_answer if user_answer else 'No answer'}"
+            )
+
+            st.info(
+                f"✅ Correct answer: {correct_answer}. "
+                f"{question['choices'][correct_answer]}"
+            )
+
+        st.divider()
+
+    # -------------------------
+    # NEW QUIZ
+    # -------------------------
+    if st.button(
+        "🔄 Create New Quiz",
+        use_container_width=True,
+        type="primary"
+    ):
+
+        reset_quiz()
+
+        st.rerun()
