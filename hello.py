@@ -10,7 +10,7 @@ st.set_page_config(
 # MY PROFILE
 # =========================
 
-st.title("👤 My Profile")
+st.title("👤 Suvin's Profile")
 st.write("Fill in your information below!")
 
 name = st.text_input("👋 Name")
