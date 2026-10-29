@@ -1232,6 +1232,10 @@ elif st.session_state.page == "result":
 
 
 
+
+import streamlit as st
+import random
+
 # -----------------------------
 # PAGE SETTINGS
 # -----------------------------
@@ -1242,7 +1246,7 @@ st.set_page_config(
 )
 
 # -----------------------------
-# CUSTOM DESIGN
+# DESIGN
 # -----------------------------
 st.markdown("""
 <style>
@@ -1302,7 +1306,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.info("🤫 The computer has a secret number. Make a guess and see what happens!")
+st.info("🤫 The computer has secretly picked a number!")
 
 # -----------------------------
 # GAME SETTINGS
@@ -1311,12 +1315,17 @@ st.subheader("⚙️ Game Settings")
 
 difficulty = st.radio(
     "Choose your difficulty:",
-    ["🟢 Easy (1–50)", "🟡 Normal (1–100)", "🔴 Hard (1–500)"],
-    index=1,
-    horizontal=False
+    [
+        "🟣 Very Easy (1–10)",
+        "🟢 Easy (1–50)",
+        "🟡 Normal (1–100)",
+        "🔴 Hard (1–500)",
+    ],
+    index=2
 )
 
 ranges = {
+    "🟣 Very Easy (1–10)": (1, 10),
     "🟢 Easy (1–50)": (1, 50),
     "🟡 Normal (1–100)": (1, 100),
     "🔴 Hard (1–500)": (1, 500),
@@ -1332,7 +1341,11 @@ max_guesses = st.number_input(
     step=1
 )
 
-if st.button("🚀 Start New Game", use_container_width=True, type="primary"):
+if st.button(
+    "🚀 Start New Game",
+    use_container_width=True,
+    type="primary"
+):
     st.session_state.low = low
     st.session_state.high = high
     st.session_state.secret_number = random.randint(low, high)
@@ -1375,10 +1388,11 @@ if st.session_state.game_started:
     # -------------------------
     if not st.session_state.game_over:
 
-        with st.form(key=f"guess_form_{st.session_state.round_id}"):
-
+        with st.form(
+            key=f"guess_form_{st.session_state.round_id}"
+        ):
             guess = st.number_input(
-                f"Enter your guess ({low}–{high})",
+                f"Your guess ({low}–{high})",
                 min_value=low,
                 max_value=high,
                 value=low,
@@ -1391,9 +1405,7 @@ if st.session_state.game_started:
             )
 
         if submitted:
-
             secret = st.session_state.secret_number
-
             st.session_state.attempts += 1
 
             if guess == secret:
@@ -1446,14 +1458,15 @@ if st.session_state.game_started:
         if st.session_state.won:
             st.success("🏆 You won! Great guessing!")
 
-        st.button(
+        if st.button(
             "🔄 Play Again",
-            use_container_width=True,
-            on_click=lambda: setattr(
-                st.session_state, "game_started", False
-            )
-        )
+            use_container_width=True
+        ):
+            st.session_state.game_started = False
+            st.session_state.game_over = False
+            st.session_state.feedback = ""
+            st.rerun()
 
 st.divider()
-st.caption("💡 Tip: Use the hints to narrow down the possible numbers.")
+st.caption("💡 Tip: Start with Very Easy and work your way up!")
 
