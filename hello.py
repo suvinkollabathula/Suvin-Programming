@@ -1219,3 +1219,241 @@ elif st.session_state.page == "result":
         reset_quiz()
 
         st.rerun()
+
+
+
+
+
+    # --------------------------------------------------------------------
+    # NEW TASK
+    # --------------------------------------------------------------------
+
+
+
+
+
+# -----------------------------
+# PAGE SETTINGS
+# -----------------------------
+st.set_page_config(
+    page_title="Guess the Number",
+    page_icon="🎯",
+    layout="centered"
+)
+
+# -----------------------------
+# CUSTOM DESIGN
+# -----------------------------
+st.markdown("""
+<style>
+.main-title {
+    text-align: center;
+    font-size: 42px;
+    font-weight: 800;
+}
+.subtitle {
+    text-align: center;
+    color: #888;
+    margin-bottom: 25px;
+}
+.game-card {
+    padding: 24px;
+    border: 1px solid #ddd;
+    border-radius: 18px;
+    text-align: center;
+    margin: 20px 0;
+}
+.big-number {
+    font-size: 48px;
+    font-weight: 800;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# -----------------------------
+# SESSION STATE
+# -----------------------------
+defaults = {
+    "game_started": False,
+    "secret_number": None,
+    "attempts": 0,
+    "max_guesses": 7,
+    "game_over": False,
+    "won": False,
+    "feedback": "",
+    "round_id": 0,
+    "low": 1,
+    "high": 100,
+}
+
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+
+# -----------------------------
+# HEADER
+# -----------------------------
+st.markdown(
+    '<div class="main-title">🎯 Guess the Number</div>',
+    unsafe_allow_html=True
+)
+st.markdown(
+    '<div class="subtitle">Can you find the secret number?</div>',
+    unsafe_allow_html=True
+)
+
+st.info("🤫 The computer has a secret number. Make a guess and see what happens!")
+
+# -----------------------------
+# GAME SETTINGS
+# -----------------------------
+st.subheader("⚙️ Game Settings")
+
+difficulty = st.radio(
+    "Choose your difficulty:",
+    ["🟢 Easy (1–50)", "🟡 Normal (1–100)", "🔴 Hard (1–500)"],
+    index=1,
+    horizontal=False
+)
+
+ranges = {
+    "🟢 Easy (1–50)": (1, 50),
+    "🟡 Normal (1–100)": (1, 100),
+    "🔴 Hard (1–500)": (1, 500),
+}
+
+low, high = ranges[difficulty]
+
+max_guesses = st.number_input(
+    "Maximum number of guesses",
+    min_value=1,
+    max_value=50,
+    value=7,
+    step=1
+)
+
+if st.button("🚀 Start New Game", use_container_width=True, type="primary"):
+    st.session_state.low = low
+    st.session_state.high = high
+    st.session_state.secret_number = random.randint(low, high)
+    st.session_state.attempts = 0
+    st.session_state.max_guesses = int(max_guesses)
+    st.session_state.game_over = False
+    st.session_state.won = False
+    st.session_state.feedback = ""
+    st.session_state.game_started = True
+    st.session_state.round_id += 1
+    st.rerun()
+
+# -----------------------------
+# GAME SCREEN
+# -----------------------------
+if st.session_state.game_started:
+
+    low = st.session_state.low
+    high = st.session_state.high
+    attempts = st.session_state.attempts
+    limit = st.session_state.max_guesses
+
+    st.divider()
+
+    st.markdown(
+        f"""
+        <div class="game-card">
+            <div>🔢 Guess a number between {low} and {high}</div>
+            <div class="big-number">❓</div>
+            <div>Attempts: {attempts} / {limit}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.progress(min(attempts / limit, 1.0))
+
+    # -------------------------
+    # GUESS INPUT
+    # -------------------------
+    if not st.session_state.game_over:
+
+        with st.form(key=f"guess_form_{st.session_state.round_id}"):
+
+            guess = st.number_input(
+                f"Enter your guess ({low}–{high})",
+                min_value=low,
+                max_value=high,
+                value=low,
+                step=1
+            )
+
+            submitted = st.form_submit_button(
+                "🎯 Submit Guess",
+                use_container_width=True
+            )
+
+        if submitted:
+
+            secret = st.session_state.secret_number
+
+            st.session_state.attempts += 1
+
+            if guess == secret:
+                st.session_state.feedback = "correct"
+                st.session_state.won = True
+                st.session_state.game_over = True
+
+            elif st.session_state.attempts >= limit:
+                st.session_state.feedback = "lost"
+                st.session_state.game_over = True
+
+            elif guess > secret:
+                st.session_state.feedback = "high"
+
+            else:
+                st.session_state.feedback = "low"
+
+            st.rerun()
+
+    # -------------------------
+    # FEEDBACK
+    # -------------------------
+    feedback = st.session_state.feedback
+
+    if feedback == "high":
+        st.warning("⬆️ Too high! Try a smaller number.")
+
+    elif feedback == "low":
+        st.info("⬇️ Too low! Try a bigger number.")
+
+    elif feedback == "correct":
+        st.balloons()
+        st.success(
+            f"🎉 Correct! The secret number was "
+            f"{st.session_state.secret_number}!"
+        )
+        st.metric("Guesses used", st.session_state.attempts)
+
+    elif feedback == "lost":
+        st.error(
+            f"😢 Out of guesses! The secret number was "
+            f"{st.session_state.secret_number}."
+        )
+
+    # -------------------------
+    # GAME OVER
+    # -------------------------
+    if st.session_state.game_over:
+
+        if st.session_state.won:
+            st.success("🏆 You won! Great guessing!")
+
+        st.button(
+            "🔄 Play Again",
+            use_container_width=True,
+            on_click=lambda: setattr(
+                st.session_state, "game_started", False
+            )
+        )
+
+st.divider()
+st.caption("💡 Tip: Use the hints to narrow down the possible numbers.")
+
