@@ -1470,3 +1470,66 @@ if st.session_state.game_started:
 st.divider()
 st.caption("💡 Tip: Start with Very Easy and work your way up!")
 
+#----------------------------------------------------------------------------------------------------
+#NEW TASK
+#----------------------------------------------------------------------------------------------------
+
+
+# Page title
+st.set_page_config(page_title="My To-Do List", page_icon="✅")
+
+st.title("✅ My To-Do List")
+st.write("Plan your day and track your progress.")
+
+# Create our task list
+if "tasks" not in st.session_state:
+    st.session_state.tasks = []
+
+if "next_id" not in st.session_state:
+    st.session_state.next_id = 1
+
+# Add a new task
+with st.form("add_task", clear_on_submit=True):
+    new_task = st.text_input("What do you need to do?")
+    add = st.form_submit_button("➕ Add Task")
+
+if add:
+    if new_task.strip():
+        st.session_state.tasks.append({
+            "id": st.session_state.next_id,
+            "text": new_task.strip(),
+            "done": False
+        })
+        st.session_state.next_id += 1
+    else:
+        st.warning("Please enter a task!")
+
+# Display all tasks
+st.subheader("My Tasks")
+
+if not st.session_state.tasks:
+    st.info("No tasks yet! Add one above.")
+
+for task in st.session_state.tasks:
+    col1, col2 = st.columns([5, 1])
+
+    with col1:
+        task["done"] = st.checkbox(
+            task["text"],
+            value=task["done"],
+            key=f"task_{task['id']}"
+        )
+
+    with col2:
+        if st.button("🗑️", key=f"delete_{task['id']}"):
+            st.session_state.tasks.remove(task)
+            st.rerun()
+
+# Progress
+total = len(st.session_state.tasks)
+completed = sum(task["done"] for task in st.session_state.tasks)
+
+if total > 0:
+    st.progress(completed / total)
+    st.write(f"Completed {completed} out of {total} tasks!")
+
